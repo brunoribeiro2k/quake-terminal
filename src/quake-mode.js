@@ -649,11 +649,21 @@ export const QuakeMode = class {
   _clipAnimationAboveTerminal(actor) {
     this._clearAnimationClip?.();
     const originalClip = actor.has_clip ? actor.get_clip() : null;
-    const top = actor.meta_window.get_frame_rect().y;
+
+    // The terminal always sits at the top of the monitor work area, i.e. right
+    // below the panel. Read it on every update instead of snapshotting the
+    // window frame: the frame can still be mid move/resize when the animation
+    // starts, which left the clip too high and let the terminal paint over
+    // the panel.
+    const getTop = () => {
+      const window = actor.meta_window;
+      return window.get_work_area_for_monitor(window.get_monitor()).y;
+    };
 
     // Actor-local coordinates move with the window; counteract the translation
     // so the animation stays below the terminal's intended top edge.
     const updateClip = () => {
+      const top = getTop();
       const [x, y, width, height] = originalClip || [
         0,
         0,
